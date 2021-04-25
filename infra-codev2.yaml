@@ -1,0 +1,77 @@
+Resources:
+ EC2Instance:
+  Type: "AWS::EC2::Instance"
+  Properties:
+   InstanceType: t2.micro
+   ImageId: ami-a4c7edb2
+   KeyName: virginia-region
+   SecurityGroupIds:
+   - !Ref SSHSecurityGroup 
+   - !Ref HTTPSecurityGroup 
+   SubnetId: !Ref PublicSubnet
+
+ SSHSecurityGroup:
+  Type: "AWS::EC2::SecurityGroup"
+  Properties:
+   GroupDescription: SSH Security Group
+   SecurityGroupIngress:
+   - IpProtocol: tcp
+     FromPort: 22
+     ToPort: 22
+     CidrIp: 42.106.208.196/32
+   VpcId: !Ref VPC
+
+ HTTPSecurityGroup:
+  Type: "AWS::EC2::SecurityGroup"
+  Properties:
+   GroupDescription: HTTP Security Group
+   SecurityGroupIngress:
+   - IpProtocol: tcp
+     FromPort: 80
+     ToPort: 80
+     CidrIp: 0.0.0.0/0      
+   VpcId: !Ref VPC
+
+ VPC:
+  Type: "AWS::EC2::VPC" 
+  Properties:
+   CidrBlock: 10.0.0.0/16 
+   EnableDnsSupport: True
+   EnableDnsHostnames: True
+
+ PublicSubnet:  
+  Type: "AWS::EC2::Subnet"
+  Properties: 
+   AvailabilityZone: us-east-1a
+   CidrBlock: 10.0.1.0/24
+   MapPublicIpOnLaunch: True
+   VpcId: !Ref VPC
+
+ InternetGateway:
+  Type: "AWS::EC2::InternetGateway"
+  DependsOn: VPC
+ 
+ AttachGateway:
+  Type: "AWS::EC2::VPCGatewayAttachment"
+  Properties:
+   VpcId: !Ref VPC
+   InternetGatewayId: !Ref InternetGateway
+ 
+ PublicRouteTable:
+  Type: "AWS::EC2::RouteTable"
+  Properties:
+   VpcId: !Ref VPC
+ 
+ PublicRoute:
+  Type: AWS::EC2::Route
+  DependsOn: AttachGateway
+  Properties:
+   RouteTableId: !Ref PublicRouteTable
+   DestinationCidrBlock: 0.0.0.0/0
+   GatewayId: !Ref InternetGateway  
+
+ PublicSubnetARouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
